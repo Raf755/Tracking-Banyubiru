@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>KRL Tracker Jogja – Palur</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" rel="stylesheet">
+  <style>
+    html, body, #map { height: 100%; margin: 0; padding: 0; }
+    .info {
+      background: #c00;
+      color: white;
+      padding: 10px;
+      font-family: sans-serif;
+      font-size: 16px;
+    }
+    .info span { display: inline-block; margin-right: 10px; }
+    #ruteSelector {
+      margin-top: 5px;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="info">
+  🚆 Kereta Banyubiru <span id="ruteTitle">Solo Balapan - Semarang Tawang</span><br>
+  <select id="ruteSelector">
+    <option value="YOGYAKARTA">Solo Balapan → Semarang Tawang</option>
+    <option value="PALUR">Semarang Tawang → Solo Balapan</option>
+  </select><br>
+  <span id="status">Status: -</span><br>
+  🌡️ Suhu: N/A ℃ 🚉 Kecepatan: <span id="speed">0</span> km/jam |
+  📍 Stasiun berikutnya: <span id="nextStation">-</span> ✏️ Jarak: <span id="distance">-</span> km
+</div>
+
+<div id="map"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+  const stasiunData = {
+    YOGYAKARTA: [
+     const stasiunData = {
+  YOGYAKARTA: [
+    ["Yogyakarta", -7.789328, 110.363068],
+    ["Lempuyangan", -7.790080, 110.375413],
+    ["Maguwo", -7.785123, 110.436743],
+    ["Brambanan", -7.756670, 110.500398],
+    ["Srowot", -7.741498, 110.549159],
+    ["Klaten", -7.712433, 110.602911],
+    ["Ceper", -7.668951, 110.674844],
+    ["Delanggu", -7.622235, 110.706595],
+    ["Gawok", -7.589437, 110.744549],
+    ["Purwosari", -7.561491, 110.796383],
+    ["Solo Balapan", -7.556868, 110.821221],
+    ["Kalioso (Melintas Langsung)", -7.4661685, 110.8049988], 
+    ["Salem", -7.395554, 110.827158], 
+    ["Sumberlawang (Melintas Langsung)", -7.327685, 110.863682], 
+    ["Gundih", -7.218638, 110.899871], 
+    ["Karangsono (Melintas Langsung)", -7.196307, 110.825662], 
+    ["Telawa", -7.185850, 110.751969], 
+    ["Padas", -7.179187, 110.671866],
+    ["Kedungjati", -7.163554, 110.635695],
+    ["Tanggung", -7.091447, 110.603163],
+    ["Brumbung", -7.025725, 110.521995],
+    ["Alastua (Melintas Langsung)", -6.984469, 110.475782],
+    ["Semarang Tawang Bank Jateng", -6.984469, 110.475782]
+  ],
+  PALUR: []
+};
+    ],
+    PALUR: []
+  };
+  stasiunData.PALUR = [...stasiunData.YOGYAKARTA].reverse();
+
+  let map = L.map('map').setView([-7.7, 110.6], 11);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+
+  let userMarker = null;
+  let line = null;
+  let posisiStasiun = [];
+  let rute = "YOGYAKARTA";
+
+  const ruteSelector = document.getElementById("ruteSelector");
+  ruteSelector.addEventListener("change", () => {
+    rute = ruteSelector.value;
+    updateStasiun();
+  });
+
+  function updateStasiun() {
+    if (line) map.removeLayer(line);
+    posisiStasiun.forEach(m => map.removeLayer(m));
+    posisiStasiun = [];
+
+    const coords = stasiunData[rute];
+    const latlngs = [];
+
+    coords.forEach(([nama, lat, lng]) => {
+      let marker = L.marker([lat, lng]).addTo(map).bindPopup(nama);
+      posisiStasiun.push(marker);
+      latlngs.push([lat, lng]);
+    });
+
+    line = L.polyline(latlngs, { color: 'red' }).addTo(map);
+    document.getElementById("ruteTitle").innerText = rute === "YOGYAKARTA" ? "Yogyakarta – Palur" : "Palur – Yogyakarta";
+  }
+
+  updateStasiun();
+
+  function updatePosisi(pos) {
+    const lat = pos.coords.latitude;
+    const lng = pos.coords.longitude;
+    const speed = pos.coords.speed ? (pos.coords.speed * 3.6).toFixed(1) : 0;
+
+    document.getElementById("speed").textContent = speed;
+
+    if (userMarker) map.removeLayer(userMarker);
+    userMarker = L.marker([lat, lng], { 
+      icon: L.icon({ 
+        iconUrl: "https://cdn-icons-png.flaticon.com/512/61/61088.png", 
+        iconSize: [30, 30] 
+      }) 
+    }).addTo(map);
+
+    const stasiunTerdekat = cariStasiunBerikut(lat, lng);
+    document.getElementById("nextStation").textContent = stasiunTerdekat.nama;
+    document.getElementById("distance").textContent = stasiunTerdekat.jarak.toFixed(2);
+
+    const status = speed < 3 ? `Berhenti di stasiun ${stasiunTerdekat.nama}` : "Berjalan";
+    document.getElementById("status").textContent = `Status: ${status}`;
+  }
+
+  function cariStasiunBerikut(lat, lng) {
+    const list = stasiunData[rute];
+
+    // Jika dekat dengan stasiun mana pun (<0.7 km), itu dianggap sebagai stasiun aktif
+    for (let i = 0; i < list.length; i++) {
+      const [nama, stLat, stLng] = list[i];
+      const jarak = getDistance(lat, lng, stLat, stLng);
+      if (jarak < 0.7) return { nama, jarak };
+    }
+
+    // Cari stasiun terdekat di rute
+    let indexTerdekat = 0;
+    let jarakTerdekat = Infinity;
+
+    for (let i = 0; i < list.length; i++) {
+      const [_, stLat, stLng] = list[i];
+      const jarak = getDistance(lat, lng, stLat, stLng);
+      if (jarak < jarakTerdekat) {
+        jarakTerdekat = jarak;
+        indexTerdekat = i;
+      }
+    }
+
+    // Ambil stasiun berikutnya dari urutan rute
+    let indexBerikutnya = indexTerdekat + 1;
+    if (indexBerikutnya >= list.length) indexBerikutnya = indexTerdekat;
+
+    const [nama, stLat, stLng] = list[indexBerikutnya];
+    const jarak = getDistance(lat, lng, stLat, stLng);
+    return { nama, jarak };
+  }
+
+  function getDistance(lat1, lon1, lat2, lon2) {
+    const R = 6371;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat / 2) ** 2 +
+              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+              Math.sin(dLon / 2) ** 2;
+    return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
+  }
+
+  if (navigator.geolocation) {
+    navigator.geolocation.watchPosition(updatePosisi, console.error, { enableHighAccuracy: true });
+  } else {
+    alert("Geolocation tidak didukung di perangkat ini");
+  }
+</script>
+</body>
+</html>
