@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>KRL Tracker Jogja – Palur</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" rel="stylesheet">
+  <style>
+    html, body, #map { height: 100%; margin: 0; padding: 0; }
+    .info {
+      background: #c00; color: white; padding: 10px;
+      font-family: sans-serif; font-size: 16px;
+    }
+    .info span { display: inline-block; margin-right: 10px; }
+    #ruteSelector { position: absolute; top: 60px; left: 10px; z-index: 1000; }
+  </style>
+</head>
+<body>
+
+<div class="info">
+  🚆 KRL <span id="ruteTitle">Yogyakarta – Palur</span>
+  <span id="status">Status: -</span><br>
+  🌡️ Suhu: N/A ℃ 🚉 Kecepatan: <span id="speed">0</span> km/jam |
+  📍 Stasiun berikutnya: <span id="nextStation">-</span> ✏️ Jarak: <span id="distance">-</span> km
+</div>
+
+<select id="ruteSelector">
+  <option value="YOGYAKARTA">Yogyakarta → Palur</option>
+  <option value="PALUR">Palur → Yogyakarta</option>
+</select>
+
+<div id="map"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+  const stasiunData = {
+    YOGYAKARTA: [
+      ["Yogyakarta", -7.789471, 110.363340],
+      ["Lempuyangan", -7.789034, 110.379611],
+      ["Maguwo", -7.782297, 110.422337],
+      ["Brambanan", -7.754557, 110.489987],
+      ["Srowot", -7.729038, 110.537757],
+      ["Klaten", -7.705728, 110.607313],
+      ["Ceper", -7.685662, 110.670563],
+      ["Delanggu", -7.660011, 110.692672],
+      ["Gawok", -7.611415, 110.752007],
+      ["Purwosari", -7.571276, 110.792456],
+      ["Solo Balapan", -7.560290, 110.830272],
+      ["Kalioso (Melintas Langsung)", -7.4661685, 110.8049988], 
+      ["Salem", -7.395554,110.827158], 
+["Sumberlawang (Melintas Langsung)", -7.327685,110.863682], 
+["Gundih", -7.218638,110.899871], 
+["Karangsono (Melintas Langsung)", -7.196307,110.825662], 
+["Telawa", -7.185850,110.751969], 
+["Padas", -7.179187,110.671866],
+["Kedungjati", -7.163554,110.635695],
+["Tanggung", -7.091447,110.603163],
+["Brumbung", -7.025725,110.521995],
+["Alastua (Melintas Langsung)", -6.984469,110.475782],
+["Semarang Tawang Bank Jateng", -6.984469,110.475782]
+
+    ],
+    PALUR: []
+  };
+  stasiunData.PALUR = [...stasiunData.YOGYAKARTA].reverse();
+
+  let map = L.map('map').setView([-7.7, 110.6], 11);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+
+  let userMarker = null;
+  let trainMarker = null;
+  let line = null;
+  let posisiStasiun = [];
+  let rute = "YOGYAKARTA";
+
+  const ruteSelector = document.getElementById("ruteSelector");
+  ruteSelector.addEventListener("change", () => {
+    rute = ruteSelector.value;
+    updateStasiun();
+  });
+
+  function updateStasiun() {
+    if (line) map.removeLayer(line);
+    posisiStasiun.forEach(m => map.removeLayer(m));
+    posisiStasiun = [];
+
+    const coords = stasiunData[rute];
+    const latlngs = [];
+
+    coords.forEach(([nama, lat, lng]) => {
+      let marker = L.marker([lat, lng]).addTo(map).bindPopup(nama);
+      posisiStasiun.push(marker);
+      latlngs.push([lat, lng]);
+    });
+
+    line = L.polyline(latlngs, { color: 'red' }).addTo(map);
+    document.getElementById("ruteTitle").innerText = rute === "YOGYAKARTA" ? "Yogyakarta – Palur" : "Palur – Yogyakarta";
+  }
+
+  updateStasiun();
+
+  function updatePosisi(pos) {
+    const lat = pos.coords.latitude;
+    const lng = pos.coords.longitude;
+    const speed = pos.coords.speed ? (pos.coords.speed * 3.6).toFixed(1) : 0;
+
+    document.getElementById("speed").textContent = speed;
+
+    if (userMarker) map.removeLayer(userMarker);
+    userMarker = L.marker([lat, lng], { icon: L.icon({ iconUrl: "https://cdn-icons-png.flaticon.com/512/61/61088.png", iconSize: [30, 30] }) }).addTo(map);
+
+    const stasiunTerdekat = cariStasiunBerikut(lat, lng);
+    document.getElementById("nextStation").textContent = stasiunTerdekat.nama;
+    document.getElementById("distance").textContent = stasiunTerdekat.jarak.toFixed(2);
+
+    const status = speed < 3 ? `Berhenti di stasiun ${stasiunTerdekat.nama}` : "Berjalan";
+    document.getElementById("status").textContent = `Status: ${status}`;
+  }
+
+  function cariStasiunBerikut(lat, lng) {
+    const list = stasiunData[rute];
+    for (let i = 0; i < list.length; i++) {
+      const [nama, stLat, stLng] = list[i];
+      const jarak = getDistance(lat, lng, stLat, stLng);
+      if (jarak < 0.7) return { nama, jarak };
+    }
+    let terdekat = { nama: list[0][0], jarak: 999 };
+    for (let i = 0; i < list.length; i++) {
+      const [nama, stLat, stLng] = list[i];
+      const jarak = getDistance(lat, lng, stLat, stLng);
+      if (jarak < terdekat.jarak) terdekat = { nama, jarak };
+    }
+    return terdekat;
+  }
+
+  function getDistance(lat1, lon1, lat2, lon2) {
+    const R = 6371;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat/2) ** 2 +
+              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+              Math.sin(dLon/2) ** 2;
+    return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
+  }
+
+  if (navigator.geolocation) {
+    navigator.geolocation.watchPosition(updatePosisi, console.error, { enableHighAccuracy: true });
+  } else {
+    alert("Geolocation tidak didukung di perangkat ini");
+  }
+</script>
+</body>
+</html>
