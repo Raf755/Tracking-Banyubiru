@@ -7,10 +7,10 @@
   <style>
     html, body, #map { height: 100%; margin: 0; padding: 0; }
     .info {
-      background: #c00; 
-      color: white; 
+      background: #c00;
+      color: white;
       padding: 10px;
-      font-family: sans-serif; 
+      font-family: sans-serif;
       font-size: 16px;
     }
     .info span { display: inline-block; margin-right: 10px; }
@@ -51,17 +51,17 @@
       ["Purwosari", -7.571276, 110.792456],
       ["Solo Balapan", -7.560290, 110.830272],
       ["Kalioso (Melintas Langsung)", -7.4661685, 110.8049988], 
-      ["Salem", -7.395554,110.827158], 
-      ["Sumberlawang (Melintas Langsung)", -7.327685,110.863682], 
-      ["Gundih", -7.218638,110.899871], 
-      ["Karangsono (Melintas Langsung)", -7.196307,110.825662], 
-      ["Telawa", -7.185850,110.751969], 
-      ["Padas", -7.179187,110.671866],
-      ["Kedungjati", -7.163554,110.635695],
-      ["Tanggung", -7.091447,110.603163],
-      ["Brumbung", -7.025725,110.521995],
-      ["Alastua (Melintas Langsung)", -6.984469,110.475782],
-      ["Semarang Tawang Bank Jateng", -6.984469,110.475782]
+      ["Salem", -7.395554, 110.827158], 
+      ["Sumberlawang (Melintas Langsung)", -7.327685, 110.863682], 
+      ["Gundih", -7.218638, 110.899871], 
+      ["Karangsono (Melintas Langsung)", -7.196307, 110.825662], 
+      ["Telawa", -7.185850, 110.751969], 
+      ["Padas", -7.179187, 110.671866],
+      ["Kedungjati", -7.163554, 110.635695],
+      ["Tanggung", -7.091447, 110.603163],
+      ["Brumbung", -7.025725, 110.521995],
+      ["Alastua (Melintas Langsung)", -6.984469, 110.475782],
+      ["Semarang Tawang Bank Jateng", -6.984469, 110.475782]
     ],
     PALUR: []
   };
@@ -126,27 +126,43 @@
 
   function cariStasiunBerikut(lat, lng) {
     const list = stasiunData[rute];
+
+    // Jika dekat dengan stasiun mana pun (<0.7 km), itu dianggap sebagai stasiun aktif
     for (let i = 0; i < list.length; i++) {
       const [nama, stLat, stLng] = list[i];
       const jarak = getDistance(lat, lng, stLat, stLng);
       if (jarak < 0.7) return { nama, jarak };
     }
-    let terdekat = { nama: list[0][0], jarak: 999 };
+
+    // Cari stasiun terdekat di rute
+    let indexTerdekat = 0;
+    let jarakTerdekat = Infinity;
+
     for (let i = 0; i < list.length; i++) {
-      const [nama, stLat, stLng] = list[i];
+      const [_, stLat, stLng] = list[i];
       const jarak = getDistance(lat, lng, stLat, stLng);
-      if (jarak < terdekat.jarak) terdekat = { nama, jarak };
+      if (jarak < jarakTerdekat) {
+        jarakTerdekat = jarak;
+        indexTerdekat = i;
+      }
     }
-    return terdekat;
+
+    // Ambil stasiun berikutnya dari urutan rute
+    let indexBerikutnya = indexTerdekat + 1;
+    if (indexBerikutnya >= list.length) indexBerikutnya = indexTerdekat;
+
+    const [nama, stLat, stLng] = list[indexBerikutnya];
+    const jarak = getDistance(lat, lng, stLat, stLng);
+    return { nama, jarak };
   }
 
   function getDistance(lat1, lon1, lat2, lon2) {
     const R = 6371;
     const dLat = (lat2 - lat1) * Math.PI / 180;
     const dLon = (lon2 - lon1) * Math.PI / 180;
-    const a = Math.sin(dLat/2) ** 2 +
+    const a = Math.sin(dLat / 2) ** 2 +
               Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-              Math.sin(dLon/2) ** 2;
+              Math.sin(dLon / 2) ** 2;
     return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
   }
 
