@@ -7,26 +7,31 @@
   <style>
     html, body, #map { height: 100%; margin: 0; padding: 0; }
     .info {
-      background: #c00; color: white; padding: 10px;
-      font-family: sans-serif; font-size: 16px;
+      background: #c00; 
+      color: white; 
+      padding: 10px;
+      font-family: sans-serif; 
+      font-size: 16px;
     }
     .info span { display: inline-block; margin-right: 10px; }
-    #ruteSelector { position: absolute; top: 60px; left: 10px; z-index: 1000; }
+    #ruteSelector {
+      margin-top: 5px;
+      font-size: 14px;
+    }
   </style>
 </head>
 <body>
 
 <div class="info">
-  🚆 Kereta Banyubiru <span id="ruteTitle">Solo Balapan - Semarang Tawang</span>
+  🚆 Kereta Banyubiru <span id="ruteTitle">Solo Balapan - Semarang Tawang</span><br>
+  <select id="ruteSelector">
+    <option value="YOGYAKARTA">Solo Balapan → Semarang Tawang</option>
+    <option value="PALUR">Semarang Tawang → Solo Balapan</option>
+  </select><br>
   <span id="status">Status: -</span><br>
   🌡️ Suhu: N/A ℃ 🚉 Kecepatan: <span id="speed">0</span> km/jam |
   📍 Stasiun berikutnya: <span id="nextStation">-</span> ✏️ Jarak: <span id="distance">-</span> km
 </div>
-
-  <select id="ruteSelector">
-  <option value="Solo Balapan">Solo Balapan → Semarang Tawang</option>
-  <option value="Semarang Tawang">Semarang Tawang → Solo Balapan</option>
-</select>
 
 <div id="map"></div>
 
@@ -47,17 +52,16 @@
       ["Solo Balapan", -7.560290, 110.830272],
       ["Kalioso (Melintas Langsung)", -7.4661685, 110.8049988], 
       ["Salem", -7.395554,110.827158], 
-["Sumberlawang (Melintas Langsung)", -7.327685,110.863682], 
-["Gundih", -7.218638,110.899871], 
-["Karangsono (Melintas Langsung)", -7.196307,110.825662], 
-["Telawa", -7.185850,110.751969], 
-["Padas", -7.179187,110.671866],
-["Kedungjati", -7.163554,110.635695],
-["Tanggung", -7.091447,110.603163],
-["Brumbung", -7.025725,110.521995],
-["Alastua (Melintas Langsung)", -6.984469,110.475782],
-["Semarang Tawang Bank Jateng", -6.984469,110.475782]
-
+      ["Sumberlawang (Melintas Langsung)", -7.327685,110.863682], 
+      ["Gundih", -7.218638,110.899871], 
+      ["Karangsono (Melintas Langsung)", -7.196307,110.825662], 
+      ["Telawa", -7.185850,110.751969], 
+      ["Padas", -7.179187,110.671866],
+      ["Kedungjati", -7.163554,110.635695],
+      ["Tanggung", -7.091447,110.603163],
+      ["Brumbung", -7.025725,110.521995],
+      ["Alastua (Melintas Langsung)", -6.984469,110.475782],
+      ["Semarang Tawang Bank Jateng", -6.984469,110.475782]
     ],
     PALUR: []
   };
@@ -67,7 +71,6 @@
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
   let userMarker = null;
-  let trainMarker = null;
   let line = null;
   let posisiStasiun = [];
   let rute = "YOGYAKARTA";
@@ -106,7 +109,12 @@
     document.getElementById("speed").textContent = speed;
 
     if (userMarker) map.removeLayer(userMarker);
-    userMarker = L.marker([lat, lng], { icon: L.icon({ iconUrl: "https://cdn-icons-png.flaticon.com/512/61/61088.png", iconSize: [30, 30] }) }).addTo(map);
+    userMarker = L.marker([lat, lng], { 
+      icon: L.icon({ 
+        iconUrl: "https://cdn-icons-png.flaticon.com/512/61/61088.png", 
+        iconSize: [30, 30] 
+      }) 
+    }).addTo(map);
 
     const stasiunTerdekat = cariStasiunBerikut(lat, lng);
     document.getElementById("nextStation").textContent = stasiunTerdekat.nama;
