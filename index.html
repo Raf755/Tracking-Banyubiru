@@ -1,4 +1,5 @@
-<!DOCTYPE html><html>
+<!DOCTYPE html>
+<html>
 <head>
   <title>KRL Tracker Jogja – Palur</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -19,7 +20,8 @@
     }
   </style>
 </head>
-<body><div class="info">
+<body>
+<div class="info">
   🚆 Kereta Banyubiru <span id="ruteTitle">Solo Balapan - Semarang Tawang</span><br>
   <select id="ruteSelector">
     <option value="YOGYAKARTA">Solo Balapan → Semarang Tawang</option>
@@ -28,7 +30,11 @@
   <span id="status">Status: -</span><br>
   🌡️ Suhu: N/A ℃ 🚉 Kecepatan: <span id="speed">0</span> km/jam |
   📍 Stasiun berikutnya: <span id="nextStation">-</span> ✏️ Jarak: <span id="distance">-</span> km
-</div><div id="map"></div><script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script><script>
+</div>
+<div id="map"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
   const stasiunData = {
     YOGYAKARTA: [
       ["Yogyakarta", -7.789328, 110.363068],
@@ -42,12 +48,12 @@
       ["Gawok", -7.589437, 110.744549],
       ["Purwosari", -7.561491, 110.796383],
       ["Solo Balapan", -7.556868, 110.821221],
-      ["Kalioso (Melintas Langsung)", -7.4661685, 110.8049988], 
-      ["Salem", -7.395554, 110.827158], 
-      ["Sumberlawang (Melintas Langsung)", -7.327685, 110.863682], 
-      ["Gundih", -7.218638, 110.899871], 
-      ["Karangsono (Melintas Langsung)", -7.196307, 110.825662], 
-      ["Telawa", -7.185850, 110.751969], 
+      ["Kalioso (Melintas Langsung)", -7.4661685, 110.8049988],
+      ["Salem", -7.395554, 110.827158],
+      ["Sumberlawang (Melintas Langsung)", -7.327685, 110.863682],
+      ["Gundih", -7.218638, 110.899871],
+      ["Karangsono (Melintas Langsung)", -7.196307, 110.825662],
+      ["Telawa", -7.185850, 110.751969],
       ["Padas (Melintas Langsung)", -7.179187, 110.671866],
       ["Kedungjati (Melintas Langsung)", -7.163554, 110.635695],
       ["Tanggung (Melintas Langsung)", -7.091447, 110.603163],
@@ -101,11 +107,11 @@
     document.getElementById("speed").textContent = speed;
 
     if (userMarker) map.removeLayer(userMarker);
-    userMarker = L.marker([lat, lng], { 
-      icon: L.icon({ 
-        iconUrl: "https://cdn-icons-png.flaticon.com/512/61/61088.png", 
-        iconSize: [30, 30] 
-      }) 
+    userMarker = L.marker([lat, lng], {
+      icon: L.icon({
+        iconUrl: "https://cdn-icons-png.flaticon.com/512/61/61088.png",
+        iconSize: [30, 30]
+      })
     }).addTo(map);
 
     const stasiunTerdekat = cariStasiunBerikut(lat, lng);
@@ -153,6 +159,6 @@
   } else {
     alert("Geolocation tidak didukung di perangkat ini");
   }
-</script></body>
+</script>
+</body>
 </html>
-
